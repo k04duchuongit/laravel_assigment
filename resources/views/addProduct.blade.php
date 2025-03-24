@@ -15,6 +15,12 @@
             </ul>
         </div>
     @endif --}}
+    @if (@session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+
 
     <form action="{{ route('product.store') }}" method="POST" enctype="multipart/form-data">
         @csrf <!-- Token bảo vệ CSRF -->

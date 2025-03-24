@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Category;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Http\Requests\ProductStoreRequest;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\ProductStoreRequest;
+
 
 class ProductController extends Controller
 {
@@ -28,15 +30,25 @@ class ProductController extends Controller
     public function store(ProductStoreRequest $request)
     {
         $product = new Product();
-        $data = $request->all();
-        dd($data);
-        Product::create([
+
+        $file = $request->file('image');
+        $customNameFile = 'duchuong_' . Str::uuid() . '.' . $request->image->getClientOriginalExtension();
+        $product = Product::create([
             'name' => $request->name,
             'price' => $request->price,
             'quantity' => $request->quantity,
+            'path_img' => $customNameFile,
             'category_id' => $request->category_id,
-            'description' => $request->desc
+            'description' => $request->desc,
+            'status' => $request->status
         ]);
+        $path = $file->storeAs('uploads', $customNameFile, 'dir_public_edit');  //storeAs lưu file với tên mới
+
+        if ($product && $path) {
+            return redirect()->route('product.index')->with('success', 'Thêm sản phẩm thành công');
+        } else {
+            return redirect()->route('product.add')->with('error', 'Thêm sản phẩm thất bại , thử lại sau');
+        }
 
         $categories = Category::all();
         return view('addProduct', compact('categories'));
@@ -47,7 +59,8 @@ class ProductController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $product = Product::find($id);
+        return view('detailProduct', compact('product'));
     }
 
     /**
@@ -55,7 +68,7 @@ class ProductController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        return 'hien form sua';
     }
 
     /**
@@ -71,6 +84,17 @@ class ProductController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $product = Product::withTrashed()->find($id);
+        $statusDelete =  $product->forceDelete();
+
+        if (!$product) {
+            dd(123);
+            return redirect()->route('product.index')->with('error', 'Sản phẩm không tồn tại.');
+        }
+
+        if ($product) {
+            $product->forceDelete();
+            return redirect()->route('product.index')->with('success', 'Sản phẩm đã bị xóa vĩnh viễn.');
+        }
     }
 }
